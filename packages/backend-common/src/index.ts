@@ -1,0 +1,1 @@
+export const JWT_Secret = process.env.JWT_Secret || "raviraj123";

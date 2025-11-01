@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "workspace:*",
+    "@repo/backend-common":"workspace:*"
   },
   "keywords": [],
   "author": "",
@@ -16,8 +17,10 @@
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^6.0.0",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "router": "^2.2.0",
     "zod": "^4.1.12"
   }
