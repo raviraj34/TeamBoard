@@ -10,7 +10,7 @@ wss.on('connection', function connection(ws,request) {
   }
 
   const queryParams = new URLSearchParams(url.split('?')[1]);
-  const token =queryParams.get('token');
+  const token =queryParams.get('token') || "";
   const decoded = Jwt.verify(token,JWT_Secret);
 
 
