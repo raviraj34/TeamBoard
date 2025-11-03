@@ -6,8 +6,8 @@
 
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client"
 }
 
 datasource db {
@@ -20,8 +20,7 @@ model User{
   id            String    @id @default(uuid())
   email         String  
   password      String
-  name          String
-  photo         String
+  name          String?
   rooms         Room[]
   chats         Chat[]
 }

@@ -7,6 +7,13 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@prisma/client':
+        specifier: ^6.18.0
+        version: 6.18.0(prisma@6.18.0(typescript@5.9.2))(typescript@5.9.2)
+      prisma:
+        specifier: ^6.18.0
+        version: 6.18.0(typescript@5.9.2)
     devDependencies:
       prettier:
         specifier: ^3.6.2
@@ -48,6 +55,9 @@ importers:
       '@repo/backend-common':
         specifier: workspace:*
         version: link:../../packages/backend-common
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -123,6 +133,12 @@ importers:
 
   packages/db:
     dependencies:
+      '@prisma/client':
+        specifier: 6.18.0
+        version: 6.18.0(prisma@6.18.0(typescript@5.9.2))(typescript@5.9.2)
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.15.3
       prisma:
         specifier: ^6.18.0
         version: 6.18.0(typescript@5.9.2)
@@ -464,6 +480,18 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@prisma/client@6.18.0':
+    resolution: {integrity: sha512-jnL2I9gDnPnw4A+4h5SuNn8Gc+1mL1Z79U/3I9eE2gbxJG1oSA+62ByPW4xkeDgwE0fqMzzpAZ7IHxYnLZ4iQA==}
+    engines: {node: '>=18.18'}
+    peerDependencies:
+      prisma: '*'
+      typescript: '>=5.1.0'
+    peerDependenciesMeta:
+      prisma:
+        optional: true
+      typescript:
+        optional: true
 
   '@prisma/config@6.18.0':
     resolution: {integrity: sha512-rgFzspCpwsE+q3OF/xkp0fI2SJ3PfNe9LLMmuSVbAZ4nN66WfBiKqJKo/hLz3ysxiPQZf8h1SMf2ilqPMeWATQ==}
@@ -2120,6 +2148,11 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
+
+  '@prisma/client@6.18.0(prisma@6.18.0(typescript@5.9.2))(typescript@5.9.2)':
+    optionalDependencies:
+      prisma: 6.18.0(typescript@5.9.2)
+      typescript: 5.9.2
 
   '@prisma/config@6.18.0':
     dependencies:
