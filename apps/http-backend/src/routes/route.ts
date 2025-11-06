@@ -5,7 +5,7 @@ import bcrypt from "bcrypt"
 import { middleware } from "./middleware";
 import jwt from "jsonwebtoken"
 import { JWT_Secret } from "@repo/backend-common/config"
-import { prismaClient } from "@repo/db/client"
+import {prismaClient} from "@repo/db/client"
 userrouter.post("/signup", async (req, res) => {
     const userschema = z.object({
         email: z.string().min(3).max(30),
@@ -108,7 +108,7 @@ userrouter.post("/room", middleware, (req, res) => {
 
     //db call 
     res.json({
-        message: "room logic "
+        message: "room logic to be written  "
     })
 }
 )
