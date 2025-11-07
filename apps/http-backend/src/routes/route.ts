@@ -6,15 +6,16 @@ import { middleware } from "./middleware";
 import jwt from "jsonwebtoken"
 import { JWT_Secret } from "@repo/backend-common/config"
 import {prismaClient} from "@repo/db/client"
+
 userrouter.post("/signup", async (req, res) => {
     const userschema = z.object({
         email: z.string().min(3).max(30),
         password: z.string().min(2).max(23),
         name: z.string().min(2).max(30)
     })
-    const { email, password, name } = req.body;
-
-    const parseddata = userschema.safeParse(req.body)
+    const { password, name,email } = req.body;
+    
+    const parseddata = userschema.safeParse({email ,password , name})
 
     if (!parseddata.success) {
         res.json({
@@ -24,7 +25,7 @@ userrouter.post("/signup", async (req, res) => {
 
     const parsedpas = await bcrypt.hash(password, 20);
 
-    if (req.body.email) {
+    if (!req.body.email) {
         throw new Error("Email is required")
     }
     try {
@@ -61,8 +62,6 @@ userrouter.post("/signup", async (req, res) => {
     }
 
 })
-
-
 userrouter.post("/signin", middleware ,async (req, res) => {
     const signinschema = z.object({
         email:z.string().min(3).max(34),
@@ -108,7 +107,7 @@ userrouter.post("/room", middleware, (req, res) => {
 
     //db call 
     res.json({
-        message: "room logic to be written  "
+        message: "room logic to be written"
     })
 }
 )
