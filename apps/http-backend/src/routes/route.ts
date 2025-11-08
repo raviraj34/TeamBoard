@@ -8,61 +8,53 @@ import { JWT_Secret } from "@repo/backend-common/config"
 import {prismaClient} from "@repo/db/client"
 
 userrouter.post("/signup", async (req, res) => {
+  try {
     const userschema = z.object({
-        email: z.string().min(3).max(30),
-        password: z.string().min(2).max(23),
-        name: z.string().min(2).max(30)
-    })
-    const { password, name,email } = req.body;
-    
-    const parseddata = userschema.safeParse({email ,password , name})
+      email: z.string().email().min(3).max(30),
+      password: z.string().min(2).max(23),
+      name: z.string().min(2).max(30),
+    });
 
+    const parseddata = userschema.safeParse(req.body);
     if (!parseddata.success) {
-        res.json({
-            message: "invalid schema"
-        })
+      return res.status(400).json({ message: "Invalid schema" });
     }
 
-    const parsedpas = await bcrypt.hash(password, 20);
+    const { email, password, name } = req.body;
 
-    if (!req.body.email) {
-        throw new Error("Email is required")
-    }
-    try {
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-        if (
-            !parseddata.data?.email ||
-            !parseddata.data?.password ||
-            !parseddata.data?.name
-        ) {
-            throw new Error("Missing required fields");
-        }
+     
+    const user = await prismaClient.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+      },
+    });
 
-        const user = await prismaClient.user.create({
-            data: {
-                email: parseddata.data.email,
-                password: parseddata.data.password,
-                name: parseddata.data.name
-            },
-        });
+    
+
+    return res.status(201).json({ message:" Signup completed" });
+  } catch (err) {
+  console.error("Error in signup route:", err);
+
+  if (err instanceof Error) {
+    return res.status(500).json({ message: err.message });
+  }
+
+  return res.status(500).json({ message: "Unknown error occurred" });
+
+  
+
+}
 
 
-        res.json({
-            message: "signup completed"
-        })
+});
 
-        if (!parsedpas) {
-            res.json({
-                message: "signup route falied please try again !!"
-            })
-        }
-    }catch{
-        console.log("error in the signup route");
-        
-    }
 
-})
-userrouter.post("/signin", middleware ,async (req, res) => {
+
+userrouter.post("/signin",async (req, res) => {
     const signinschema = z.object({
         email:z.string().min(3).max(34),
         password:z.string().min(2).max(34)
@@ -75,8 +67,8 @@ userrouter.post("/signin", middleware ,async (req, res) => {
 
     const user = await prismaClient.user.findFirst({
         where: {
-            email: parsed.data?.email,
-            password: parsed.data?.password
+            email,
+            password
         }
     })
 
@@ -93,11 +85,9 @@ userrouter.post("/signin", middleware ,async (req, res) => {
       
       
         res.json({
-            token
+        token
         })
     };
-
-
 
 })
 
