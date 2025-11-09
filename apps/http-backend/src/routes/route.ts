@@ -5,7 +5,7 @@ import bcrypt from "bcrypt"
 import { middleware } from "./middleware";
 import jwt from "jsonwebtoken"
 import { JWT_Secret } from "@repo/backend-common/config"
-import {prismaClient} from "@repo/db/client"
+import { prismaClient } from "@repo/db/client"
 
 userrouter.post("/signup", async (req, res) => {
   try {
@@ -24,7 +24,7 @@ userrouter.post("/signup", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-     
+
     const user = await prismaClient.user.create({
       data: {
         email,
@@ -33,71 +33,92 @@ userrouter.post("/signup", async (req, res) => {
       },
     });
 
-    
 
-    return res.status(201).json({ message:" Signup completed" });
+
+    return res.status(201).json({ message: " Signup completed", userId:user.id });
   } catch (err) {
-  console.error("Error in signup route:", err);
+    console.error("Error in signup route:", err);
 
-  if (err instanceof Error) {
-    return res.status(500).json({ message: err.message });
+    if (err instanceof Error) {
+      return res.status(500).json({ message: err.message });
+    }
+
+    return res.status(500).json({ message: "Unknown error occurred" });
+
+
+
   }
-
-  return res.status(500).json({ message: "Unknown error occurred" });
-
-  
-
-}
 
 
 });
 
 
 
-userrouter.post("/signin",async (req, res) => {
-    const signinschema = z.object({
-        email:z.string().min(3).max(34),
-        password:z.string().min(2).max(34)
-    })
-  
-  
-    const { email, password } = req.body;
+userrouter.post("/signin", async (req, res) => {
+  const signinschema = z.object({
+    email: z.string().min(3).max(34),
+    password: z.string().min(2).max(34)
+  })
 
-    const parsed = signinschema.safeParse(req.body)
 
-    const user = await prismaClient.user.findFirst({
-        where: {
-            email,
-            password
-        }
-    })
+  const { email, password } = req.body;
 
-    if (!user) {
-        res.json({
-            message: "user not found"
-        })
+  const parsed = signinschema.safeParse(req.body)
+
+  const user = await prismaClient.user.findFirst({
+    where: {
+      email: parsed.data?.email
     }
+  })
 
-    if (user) {
-        const token = jwt.sign({
-            userId: user?.id
-        }, JWT_Secret)
-      
-      
-        res.json({
-        token
-        })
-    };
+  if (!user) {
+    res.json({
+      message: "user not found"
+    })
+  }
+
+  if (user) {
+    const token = jwt.sign({
+      userId: user?.id
+    }, JWT_Secret)
+
+
+    res.json({
+      token
+    })
+  };
 
 })
 
 
-userrouter.post("/room", middleware, (req, res) => {
+userrouter.post("/room", middleware, async (req, res) => {
 
+  const parsedroom = z.object({
+    slug: z.string().min(3).max(34)
+  })
 
-    //db call 
+  const slug = req.body
+
+  const roomschema = parsedroom.safeParse(req.body)
+
+  if (!roomschema.success) {
     res.json({
-        message: "room logic to be written"
+      message: "roomschema is wrong"
     })
+  } else {
+    //@ts-ignore
+    const userId = req.userId
+    const room =await prismaClient.room.create({
+      data: { 
+        slug: roomschema.data.slug,
+        adminId: userId
+      }
+    })
+    res.json({
+      roomId:room.id
+    })
+  }
 }
 )
+
+
