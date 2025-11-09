@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import z, { email, parse } from "zod"
+import z, { email, number, parse } from "zod"
 export const userrouter: Router = express.Router();
 import bcrypt from "bcrypt"
 import { middleware } from "./middleware";
@@ -121,4 +121,21 @@ userrouter.post("/room", middleware, async (req, res) => {
 }
 )
 
+
+userrouter.post("/chats/:roomId", async (req,res)=>{
+  const roomId = Number(req.params.roomId);
+  const messages = await prismaClient.room.findMany({
+    where:{
+      id: roomId
+    },
+    orderBy:{
+      id:"desc"
+    },
+    take:50
+    
+  })
+  res.json({
+    messages
+  })
+}) 
 
