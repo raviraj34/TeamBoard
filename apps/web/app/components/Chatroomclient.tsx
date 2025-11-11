@@ -34,7 +34,7 @@ export  function Chatroomclient({
     },[socket,loading ,id])
 
     return <div>
-        {messages.map(m=><div>{m.message}</div>)}
+        {chats.map(m=><div>{m.message}</div>)}
 
         <input type="text" value={currentmsg} onChange={e=>{
             setcurrentmsg(e.target.value);
@@ -44,7 +44,7 @@ export  function Chatroomclient({
             socket?.send(JSON.stringify({
                 type:"chat",
                 roomId:id,
-                messages:currentmsg
+                message:currentmsg
             }))
 
             setcurrentmsg("");

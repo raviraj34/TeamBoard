@@ -13,7 +13,7 @@ export default function Home() {
       }} type="text" placeholder="enter the roomId" />
 
       <button onClick={()=>{
-        router.push(`/backend/room/${roomId}`);
+        router.push(`/room/${roomId}`);
       }}>search</button>
     </div>
   );

@@ -1,10 +1,10 @@
 import axios from "axios";
-import { BACKEND_URL } from "./config";
-import { ChatRoom } from "../../components/Chatroom";
+import { BACKEND_URL } from "../../config";
 import { devIndicatorServerState } from "next/dist/server/dev/dev-indicator-server-state";
-async function getRoomId(slug:string){
+import ChatRoom from "../../components/Chatroom";
+export async function getRoomId(slug:string){
     const response =await axios.get(`${BACKEND_URL}/room/${slug}`)
-    return response.data.id;
+    return response.data.room.id;
 }
 
 
@@ -17,7 +17,7 @@ export default async function ChatRoom1({
 }){
     const slug= (await params).slug;
     const roomId = await getRoomId(slug);
-
+//@ts-ignore
     return <ChatRoom id={roomId}></ChatRoom>
 }
 

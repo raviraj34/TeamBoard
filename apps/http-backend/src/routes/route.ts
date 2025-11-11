@@ -123,6 +123,7 @@ userrouter.post("/room", middleware, async (req, res) => {
 
 
 userrouter.get("/chats/:roomId", async (req,res)=>{
+ try{
   const roomId = Number(req.params.roomId);
   console.log(req.params.roomId
   );
@@ -140,13 +141,21 @@ userrouter.get("/chats/:roomId", async (req,res)=>{
   res.json({
     messages
   })
+
+}catch(e){
+  console.log(e);
+  res.json({
+    message:[]
+  })
+  
+}
 }) 
 
 userrouter.get("/room/:slug", async (req,res)=>{
   const slug = req.params.slug;
   const room = await prismaClient.room.findFirst({
     where:{
-      slug
+      slug 
     }
   })
   res.json({
