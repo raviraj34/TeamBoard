@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import * as fabric from "fabric"
+import * as fabric from "fabric";
 
 export default function CanvasEditor() {
   const canvasRef = useRef(null);
@@ -24,7 +24,7 @@ export default function CanvasEditor() {
     const handleResize = () => {
       canvas.setDimensions({
         width: window.innerWidth - 100,
-        height: window.innerHeight - 150,
+        height: window.innerHeight - 150
       });
       canvas.renderAll();
     };
