@@ -30,6 +30,9 @@ importers:
 
   apps/draw-frontend/frontend:
     dependencies:
+      axios:
+        specifier: ^1.13.2
+        version: 1.13.2
       lucide-react:
         specifier: ^0.553.0
         version: 0.553.0(react@19.2.0)

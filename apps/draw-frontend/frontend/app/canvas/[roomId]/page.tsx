@@ -2,10 +2,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as fabric from "fabric";
+import axios from 'axios';
+import { HTTP_URL } from '@/app/congig';
 
 export default function CanvasEditor() {
   const canvasRef = useRef(null);
-  const fabricCanvasRef = useRef(null);
+  const fabricCanvasRef = useRef<Canvas | null>(null);
   const [selectedTool, setSelectedTool] = useState('select');
   const [fillColor, setFillColor] = useState('#3b82f6');
   const [strokeColor, setStrokeColor] = useState('#1e3a8a');
@@ -43,7 +45,7 @@ export default function CanvasEditor() {
       top: 100,
       width: 150,
       height: 100,
-      fill: fillColor,
+      fill: 'transparent',
       stroke: strokeColor,
       strokeWidth: 2,
     });
@@ -57,7 +59,7 @@ export default function CanvasEditor() {
       left: 150,
       top: 150,
       radius: 50,
-      fill: fillColor,
+      fill: 'transparent',
       stroke: strokeColor,
       strokeWidth: 2,
     });
@@ -72,7 +74,7 @@ export default function CanvasEditor() {
       top: 200,
       width: 100,
       height: 100,
-      fill: fillColor,
+      fill: 'transparent',
       stroke: strokeColor,
       strokeWidth: 2,
     });
@@ -96,7 +98,7 @@ export default function CanvasEditor() {
       left: 100,
       top: 100,
       fontSize: 20,
-      fill: strokeColor,
+      fill: 'black',
       fontFamily: 'Arial',
     });
     fabricCanvasRef.current.add(text);
@@ -105,12 +107,17 @@ export default function CanvasEditor() {
   };
 
   const enableDrawing = () => {
-    const canvas = fabricCanvasRef.current;
-    canvas.isDrawingMode = true;
-    canvas.freeDrawingBrush.color = strokeColor;
-    canvas.freeDrawingBrush.width = 3;
-    setSelectedTool('draw');
-  };
+  const canvas = fabricCanvasRef.current;
+  if (!canvas) return;
+  
+  
+  canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+  canvas.freeDrawingBrush.color = strokeColor;
+  canvas.freeDrawingBrush.width = 3;
+  canvas.isDrawingMode = true;
+  
+  setSelectedTool('draw');
+};
 
   const disableDrawing = () => {
     fabricCanvasRef.current.isDrawingMode = false;
@@ -158,6 +165,12 @@ export default function CanvasEditor() {
       }
     }
   };
+
+  function getexistingshape(roomId:string){
+    const res =axios.get(`${HTTP_URL}/chats/${roomId}`)
+    const data = res.data.messages;
+    
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
