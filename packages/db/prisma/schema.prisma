@@ -33,6 +33,8 @@ model User{
     adminId     String
     admin       User       @relation(fields: [adminId] ,references: [id])
     chats       Chat[]
+    canvasData  Json?
+    updatedAt   DateTime   @default(now())    @updatedAt
 }
 
 
