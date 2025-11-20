@@ -1,5 +1,6 @@
 "use client"
 
+import { log } from "console";
 import { useEffect, useRef } from "react";
 
 
@@ -17,9 +18,22 @@ export default function Canvas(){
     if(!ctx){
       return
     }
-    ctx.strokeRect(25,0,100,100);
+    canvas.addEventListener("mousedown", (e)=>{
+      console.log(e.clientX)
+      console.log(e.clientY)
+    })
 
+    canvas.addEventListener("mouseup", (e)=>{
+      console.log(e.clientX);
+      console.log(e.clientY);
+      
+    })
 
+    canvas.addEventListener("mousemove", (e)=>{
+      console.log(e.clientX);
+      console.log(e.clientY);
+      
+    })
 
 
     }
