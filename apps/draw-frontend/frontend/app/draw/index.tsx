@@ -145,5 +145,5 @@ async function getExistingShapes(roomId: string) {
         return messageData.shape;
     })
 
-    //return shapes;
+    return shapes;
 }
