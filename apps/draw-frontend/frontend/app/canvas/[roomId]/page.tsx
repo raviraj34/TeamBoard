@@ -1,6 +1,8 @@
 "use client"
 
+import CanvasDrawing, { initdraw } from "@/app/draw";
 import { log } from "console";
+import { flatMap } from "lodash";
 import { useEffect, useRef } from "react";
 
 
@@ -12,35 +14,21 @@ export default function Canvas(){
 
   useEffect(()=>{
     if(canvasRef.current){
-    const canvas =canvasRef.current;
-    const ctx = canvas.getContext("2d")
+    
+      if(canvasRef.current){
+        initdraw(canvasRef.current)
+      }
+  
 
-    if(!ctx){
-      return
-    }
-    canvas.addEventListener("mousedown", (e)=>{
-      console.log(e.clientX)
-      console.log(e.clientY)
-    })
 
-    canvas.addEventListener("mouseup", (e)=>{
-      console.log(e.clientX);
-      console.log(e.clientY);
-      
-    })
-
-    canvas.addEventListener("mousemove", (e)=>{
-      console.log(e.clientX);
-      console.log(e.clientY);
-      
-    })
+       
 
 
     }
   },[canvasRef])
 
   return <div>
-
-  <canvas ref={canvasRef} width={500} height={500}></canvas>
+    <CanvasDrawing></CanvasDrawing>
+  
   </div>
 }
