@@ -36,6 +36,6 @@ export function RoomCanvas({roomId}:{
   }
 
  return <div>
-    <Canvas roomId={roomId}/>
+    <Canvas roomId={roomId} socket={socket}/>
  </div>
 }

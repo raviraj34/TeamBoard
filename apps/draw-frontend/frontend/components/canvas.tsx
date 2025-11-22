@@ -16,6 +16,7 @@ export function Canvas({
     
       if(canvasRef.current){
         initDraw(canvasRef.current,roomId,socket)
+        
       }
   
 

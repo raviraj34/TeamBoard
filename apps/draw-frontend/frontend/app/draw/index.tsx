@@ -1,6 +1,7 @@
 //import { HTTP_BACKEND } from "@/config";
 import axios from "axios";
 import { HTTP_URL } from "../config";
+import { log } from "console";
 
 type Shape = {
     type: "rect";
@@ -138,6 +139,8 @@ function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
 
 async function getExistingShapes(roomId: string) {
     const res = await axios.get(`${HTTP_URL}/chats/${roomId}`);
+    console.log(res);
+    
     const messages = res.data.messages;
 
     const shapes = messages.map((x: {message: string}) => {

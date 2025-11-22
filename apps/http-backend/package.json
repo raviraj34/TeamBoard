@@ -5,14 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build":"tsc -b",
-    "start":"node ./dist/index.js",
-    "dev":"npm run build && npm run start"
+    "build": "tsc -b",
+    "start": "node ./dist/index.js",
+    "dev": "npm run build && npm run start"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
-    "@repo/backend-common":"workspace:*",
-    "@repo/db":"workspace:*"
+    "@repo/backend-common": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/typescript-config": "workspace:*"
   },
   "keywords": [],
   "author": "",
@@ -20,9 +20,11 @@
   "type": "commonjs",
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "router": "^2.2.0",
