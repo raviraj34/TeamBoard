@@ -51,6 +51,8 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         clicked = true
         startX = e.clientX
         startY = e.clientY
+        console.log(startX,startY);
+        
     })
 
     canvas.addEventListener("mouseup", (e) => {
@@ -123,7 +125,7 @@ function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "rgba(0, 0, 0)"
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    
     existingShapes.map((shape) => {
         if (shape.type === "rect") {
             ctx.strokeStyle = "rgba(255, 255, 255)"
@@ -138,15 +140,35 @@ function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
 }
 
 async function getExistingShapes(roomId: string) {
-    const res = await axios.get(`${HTTP_URL}/chats/${roomId}`);
-    console.log(res);
-    
-    const messages = res.data.messages;
+  const res = await axios.get(`${HTTP_URL}/chats/${roomId}`);
+  console.log("API Response:", res.data);
 
-    const shapes = messages.map((x: {message: string}) => {
-        const messageData = JSON.parse(x.message)
-        return messageData.shape;
-    })
+  // 1. Safely read messages
+  const messages = res?.data?.messages;
+  if (!Array.isArray(messages)) {
+    console.warn("messages is not an array:", messages);
+    return [];
+  }
 
-    return shapes;
+  // 2. Parse shape data safely
+  const shapes: any[] = [];
+
+  for (const msg of messages) {
+    if (!msg?.message) continue;
+
+    try {
+      const parsed = JSON.parse(msg.message);
+
+      if (parsed?.shape) {
+        shapes.push(parsed.shape);
+      } else {
+        console.warn("No shape field found in message:", parsed);
+      }
+
+    } catch (err) {
+      console.warn("Invalid JSON in message:", msg.message);
+    }
+  }
+
+  return shapes;
 }
