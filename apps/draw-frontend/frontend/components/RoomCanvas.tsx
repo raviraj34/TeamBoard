@@ -19,10 +19,13 @@ export function RoomCanvas({roomId}:{
 
         ws.onopen =()=>{
             setsocket(ws);
-            ws.send(JSON.stringify({
+            const data =JSON.stringify({
               type:"join_room",
               roomId
-            }))
+            });
+          
+          ws.send(data);
+          
         }
     },[])
 
