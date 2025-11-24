@@ -1,5 +1,5 @@
-import { Tool } from "../";
-import { getExistingShapes } from "./http";
+import { Tool } from "../../components/canvas";
+import { getExistingShapes } from ".//http";
 
 type Shape = {
     type: "rect";
@@ -93,12 +93,14 @@ export class Game {
             }
         })
     }
-
+//@ts-ignore
     mouseDownHandler = (e) => {
         this.clicked = true
         this.startX = e.clientX
         this.startY = e.clientY
     }
+    //@ts-ignore
+
     mouseUpHandler = (e) => {
         this.clicked = false
         const width = e.clientX - this.startX;
@@ -139,6 +141,8 @@ export class Game {
             roomId: this.roomId
         }))
     }
+    //@ts-ignore
+
     mouseMoveHandler = (e) => {
         if (this.clicked) {
             const width = e.clientX - this.startX;
