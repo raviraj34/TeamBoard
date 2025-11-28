@@ -11,7 +11,7 @@ type Shape = {
     type: "circle";
     centerX: number;
     centerY: number;
-    radius: number;
+    radius: number; 
 } | {
     type: "pencil";
     startX: number;
@@ -109,6 +109,7 @@ export class Game {
         const selectedTool = this.selectedTool;
         let shape: Shape | null = null;
         if (selectedTool === "rect") {
+            console.log(selectedTool); 
 
             shape = {
                 type: "rect",
@@ -167,9 +168,7 @@ export class Game {
 
     initMouseHandlers() {
         this.canvas.addEventListener("mousedown", this.mouseDownHandler)
-
         this.canvas.addEventListener("mouseup", this.mouseUpHandler)
-
         this.canvas.addEventListener("mousemove", this.mouseMoveHandler)    
 
     }
