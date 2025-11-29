@@ -130,12 +130,12 @@ userrouter.get("/chats/:roomId", async (req,res)=>{
   
   const messages = await prismaClient.chat.findMany({
     where:{
-      id: roomId
+      roomId: roomId
     },
     orderBy:{
       id:"desc"
     },
-    take:50
+    take:500
     
   })
   res.json({
@@ -145,7 +145,7 @@ userrouter.get("/chats/:roomId", async (req,res)=>{
 }catch(e){
   console.log(e);
   res.json({
-    message:[]
+    messages:[]
   })
   
 }

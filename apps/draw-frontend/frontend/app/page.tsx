@@ -1,11 +1,14 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { Pencil, Users, Zap, Download, Lock, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { Pencil, Users, Zap, Download, Lock, Sparkles, ArrowRight, Check, Router, SquarePlus, Airplay } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function WhiteboardLanding() {
+  const router  =useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
-
+  
+  
   useEffect(() => {
     setIsVisible(true);
     const interval = setInterval(() => {
@@ -87,12 +90,14 @@ export default function WhiteboardLanding() {
           </p>
 
           <div className="flex items-center justify-center gap-4 mb-16">
-            <button className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-2xl hover:shadow-indigo-300 transition-all hover:scale-105 flex items-center gap-2 font-semibold">
-              <Download className="w-5 h-5" />
-              Download for Free
+            <button className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-2xl hover:shadow-indigo-300 transition-all hover:scale-105 flex items-center gap-2 font-bold">
+              <Airplay className="w-5 h-5" />
+              Join room
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="px-8 py-4 bg-white text-gray-700 rounded-xl hover:shadow-xl transition-all border-2 border-gray-200 hover:border-indigo-200 font-semibold">
+            <button onClick={()=>{
+              router.push("/demo")
+            }} className="px-8 py-4 bg-white text-gray-700 rounded-xl hover:shadow-xl transition-all border-2 border-gray-200 hover:border-indigo-200 font-semibold">
               Try in Browser
             </button>
           </div>
