@@ -1,20 +1,21 @@
 "use client"
 import React, { useState } from 'react';
 import { Pencil, Mail, Lock, Eye, EyeOff, Github, Chrome, ArrowRight, Sparkles, User, Check } from 'lucide-react';
+import { HTTP_URL } from '../config';
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
-    agreeToTerms: false
+    agreeToTerms: false,
+    name:""
   });
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
-
+ //@ts-ignore
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
@@ -34,6 +35,24 @@ export default function SignUpPage() {
       alert('Please agree to the terms and conditions');
       return;
     }
+
+    try{
+      const res = fetch(`${HTTP_URL}/signup`,{
+        method:"post",
+        headers:{
+          "content-type": "application/json",
+        },
+        body:JSON.stringify({
+          email:formData.email,
+          password:formData.password,
+          name:formData.name
+        }),
+
+      })
+    }catch(e){
+      alert("signup error..!!!!")
+
+    }
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match');
       return;
@@ -46,7 +65,7 @@ export default function SignUpPage() {
     }, 2000);
   };
 
-  const handleSocialSignup = (provider) => {
+  const handleSocialSignup = (provider: string) => {
     alert(`Signing up with ${provider}`);
   };
 
@@ -210,10 +229,10 @@ export default function SignUpPage() {
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
-                      value={formData.fullName}
-                      onChange={(e) => handleInputChange('fullName', e.target.value)}
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder="John Doe"
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all outline-none"
+                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all outline-none text-gray-400"
                     />
                   </div>
                 </div>
@@ -229,7 +248,7 @@ export default function SignUpPage() {
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all outline-none"
+                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 text-gray-400 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all outline-none"
                     />
                   </div>
                 </div>
@@ -245,7 +264,7 @@ export default function SignUpPage() {
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
                       placeholder="Create a strong password"
-                      className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all outline-none"
+                      className="w-full text-gray-400 pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all outline-none"
                     />
                     <button
                       type="button"
@@ -290,7 +309,7 @@ export default function SignUpPage() {
                       value={formData.confirmPassword}
                       onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                       placeholder="Confirm your password"
-                      className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all outline-none"
+                      className="w-full text-gray-400 pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all outline-none"
                     />
                     <button
                       type="button"

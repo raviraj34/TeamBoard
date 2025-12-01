@@ -20,12 +20,13 @@ export default function RoomLandingPage() {
     try {
       // Generate random room ID
       const newRoomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+      const token = localStorage.getItem("Authorization");
       // Create room in database
       const response = await fetch(`${HTTP_URL}/room`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+           "Authorization": token ? token : ""
         },
         body: JSON.stringify({
           roomId: newRoomId,
