@@ -36,7 +36,7 @@ const router = useRouter();
       }
 
       // SAVE TOKEN TO LOCAL STORAGE
-      localStorage.setItem("authntication", data.token);
+      localStorage.setItem("Authorization", data.token);
       router.push("/joinroom")
       setTimeout(() => {
         alert('Sign in successful!');

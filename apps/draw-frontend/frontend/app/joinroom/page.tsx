@@ -29,19 +29,19 @@ export default function RoomLandingPage() {
            "Authorization": token ? token : ""
         },
         body: JSON.stringify({
-          roomId: newRoomId,
-          name: roomName || `Room ${newRoomId.slice(-6)}`
+          slug:newRoomId
         })
       });
 
       const data = await response.json();
+      const realroomId= data.room.id;
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create room');
       }
 
       // Redirect to canvas
-      router.push(`/canvas/${newRoomId}`);
+      router.push(`/canvas/${realroomId}`);
     } catch (err: any) {
       console.error('Error creating room:', err);
       setError(err.message || 'Failed to create room. Please try again.');
@@ -60,7 +60,7 @@ export default function RoomLandingPage() {
     
     try {
       // Validate room exists
-      const response = await fetch(`/api/rooms/${roomId}`);
+      const response = await fetch(`${HTTP_URL}/room`);
       const data = await response.json();
 
       if (!response.ok) {
