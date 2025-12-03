@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Plus, LogIn, Users, Sparkles, ArrowRight, Hash, AlertCircle } from 'lucide-react';
 import { HTTP_URL } from '../config';
+import { log } from 'node:console';
 
 export default function RoomLandingPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function RoomLandingPage() {
       });
 
       const data = await response.json();
-      const realroomId= data.room.id;
+      const realroomId= data.roomId;
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create room');
@@ -69,9 +70,11 @@ export default function RoomLandingPage() {
         }
         throw new Error(data.error || 'Failed to join room');
       }
-
+      const joinroomId = setRoomId
+      console.log(joinroomId);
+      
       // Redirect to canvas
-      router.push(`/canvas/${roomId}`);
+      router.push(`/canvas/${joinroomId}`);
     } catch (err: any) {
       console.error('Error joining room:', err);
       setError(err.message || 'Failed to join room. Please try again.');
@@ -237,6 +240,7 @@ export default function RoomLandingPage() {
               <button
                 onClick={handleJoinRoom}
                 disabled={isJoining || !roomId.trim()}
+            
                 className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-xl hover:shadow-purple-200 transition-all hover:scale-105 font-semibold flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {isJoining ? (
