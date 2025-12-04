@@ -90,7 +90,9 @@ export default function WhiteboardLanding() {
           </p>
 
           <div className="flex items-center justify-center gap-4 mb-16">
-            <button className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-2xl hover:shadow-indigo-300 transition-all hover:scale-105 flex items-center gap-2 font-bold">
+            <button onClick={()=>{
+              router.push("/joinroom")
+            }} className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-2xl hover:shadow-indigo-300 transition-all hover:scale-105 flex items-center gap-2 font-bold">
               <Airplay className="w-5 h-5" />
               Join room
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
