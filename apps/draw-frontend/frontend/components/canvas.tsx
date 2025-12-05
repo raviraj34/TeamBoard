@@ -4,7 +4,7 @@ import { IconButton } from "../components/IconButton";
 import { Circle, Pencil, RectangleHorizontalIcon } from "lucide-react";
 import { Game } from "../app/draw/Game";
 
-export type Tool = "circle" | "rect" | "pencil";
+export type Tool = "circle" | "rect" | "pencil" | "text";
 
 export function Canvas({
     roomId,

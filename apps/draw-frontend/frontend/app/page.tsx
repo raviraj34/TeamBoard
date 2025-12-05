@@ -57,7 +57,9 @@ export default function WhiteboardLanding() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">
+          <button onClick={()=>{
+            router.push("/features")
+          }} className="px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">
             Features
           </button>
           <button className="px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">

@@ -4,7 +4,8 @@ import { getExistingShapes } from "./http";
 type Shape =
     | { type: "rect"; x: number; y: number; width: number; height: number }
     | { type: "circle"; centerX: number; centerY: number; radius: number }
-    | { type: "pencil"; path: { x: number; y: number }[] };
+    | { type: "pencil"; path: { x: number; y: number }[] }
+    | { type: "text"; x: number; y: number; text: string; fontSize: number };
 
 export class Game {
     private canvas: HTMLCanvasElement;
@@ -16,6 +17,8 @@ export class Game {
     private startY = 0;
     private selectedTool: Tool = "circle";
     private currentPath: { x: number; y: number }[] = [];
+    private isEditingText = false;
+    private textInput: HTMLInputElement | null = null;
 
     socket?: WebSocket;
     mode: "demo" | "live";
@@ -41,10 +44,15 @@ export class Game {
         this.canvas.removeEventListener("mousedown", this.mouseDownHandler);
         this.canvas.removeEventListener("mouseup", this.mouseUpHandler);
         this.canvas.removeEventListener("mousemove", this.mouseMoveHandler);
+        this.removeTextInput();
     }
 
     setTool(tool: Tool) {
         this.selectedTool = tool;
+        // Remove text input if switching away from text tool
+        if (tool !== "text") {
+            this.removeTextInput();
+        }
     }
 
     async init() {
@@ -81,6 +89,7 @@ export class Game {
 
     drawAllShapes() {
         this.ctx.strokeStyle = "white";
+        this.ctx.fillStyle = "white";
 
         for (const shape of this.existingShapes) {
             if (shape.type === "rect") {
@@ -104,6 +113,9 @@ export class Game {
                 }
                 this.ctx.stroke();
                 this.ctx.closePath();
+            } else if (shape.type === "text") {
+                this.ctx.font = `${shape.fontSize}px Arial`;
+                this.ctx.fillText(shape.text, shape.x, shape.y);
             }
         }
     }
@@ -120,7 +132,94 @@ export class Game {
         this.ctx.closePath();
     }
 
+    createTextInput(x: number, y: number) {
+        if (this.isEditingText) return;
+
+        this.isEditingText = true;
+
+        // Create input element
+        const input = document.createElement("input");
+        input.type = "text";
+        input.style.position = "absolute";
+        input.style.left = `${this.canvas.offsetLeft + x}px`;
+        input.style.top = `${this.canvas.offsetTop + y}px`;
+        input.style.font = "20px Arial";
+        input.style.border = "2px solid white";
+        input.style.background = "rgba(0, 0, 0, 0.8)";
+        input.style.color = "white";
+        input.style.padding = "5px";
+        input.style.outline = "none";
+        input.style.zIndex = "1000";
+
+        this.textInput = input;
+        document.body.appendChild(input);
+        input.focus();
+
+        // Handle Enter key to confirm text
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                this.finalizeText(x, y, input.value);
+            } else if (e.key === "Escape") {
+                this.removeTextInput();
+            }
+        });
+
+        // Handle click outside to confirm
+        input.addEventListener("blur", () => {
+            if (input.value.trim()) {
+                this.finalizeText(x, y, input.value);
+            } else {
+                this.removeTextInput();
+            }
+        });
+    }
+
+    finalizeText(x: number, y: number, text: string) {
+        if (!text.trim()) {
+            this.removeTextInput();
+            return;
+        }
+
+        const shape: Shape = {
+            type: "text",
+            x,
+            y: y + 20, // Adjust for font baseline
+            text: text.trim(),
+            fontSize: 20,
+        };
+
+        this.existingShapes.push(shape);
+        this.clearCanvas();
+        this.drawAllShapes();
+
+        if (this.mode !== "demo") {
+            this.socket?.send(
+                JSON.stringify({
+                    type: "chat",
+                    message: JSON.stringify({ shape }),
+                    roomId: this.roomId,
+                })
+            );
+        }
+
+        this.removeTextInput();
+    }
+
+    removeTextInput() {
+        if (this.textInput) {
+            this.textInput.remove();
+            this.textInput = null;
+            this.isEditingText = false;
+        }
+    }
+
     mouseDownHandler = (e: MouseEvent) => {
+        // Handle text tool separately
+        if (this.selectedTool === "text") {
+            this.createTextInput(e.offsetX, e.offsetY);
+            return;
+        }
+
         this.clicked = true;
         this.startX = e.offsetX;
         this.startY = e.offsetY;
@@ -150,81 +249,84 @@ export class Game {
 
         if (this.selectedTool === "rect") {
             this.ctx.strokeRect(this.startX, this.startY, width, height);
-        }else if (this.selectedTool === "circle") {
-  const width = e.offsetX - this.startX;
-  const height = e.offsetY - this.startY;
-  const radius = Math.sqrt(width * width + height * height) / 2;
+        } else if (this.selectedTool === "circle") {
+            const width = e.offsetX - this.startX;
+            const height = e.offsetY - this.startY;
+            const radius = Math.sqrt(width * width + height * height) / 2;
 
-  this.ctx.beginPath();
-  this.ctx.arc(
-    this.startX + width / 2,
-    this.startY + height / 2,
-    radius,
-    0,
-    Math.PI * 2
-  );
-  this.ctx.stroke();
-}
-
+            this.ctx.beginPath();
+            this.ctx.arc(
+                this.startX + width / 2,
+                this.startY + height / 2,
+                radius,
+                0,
+                Math.PI * 2
+            );
+            this.ctx.stroke();
+        }
     };
 
-   mouseUpHandler = (e: MouseEvent) => {
-  this.clicked = false;
+    mouseUpHandler = (e: MouseEvent) => {
+        // Don't process mouse up for text tool
+        if (this.selectedTool === "text") {
+            return;
+        }
 
-  const endX = e.offsetX;
-  const endY = e.offsetY;
+        this.clicked = false;
 
-  const width = endX - this.startX;
-  const height = endY - this.startY;
+        const endX = e.offsetX;
+        const endY = e.offsetY;
 
-  let shape: Shape | null = null;
+        const width = endX - this.startX;
+        const height = endY - this.startY;
 
-  // Pencil finish
-  if (this.selectedTool === "pencil" && this.currentPath.length > 1) {
-    shape = { type: "pencil", path: this.currentPath };
-    this.currentPath = [];
-  }
+        let shape: Shape | null = null;
 
-  // Rectangle finish
-  else if (this.selectedTool === "rect") {
-    shape = {
-      type: "rect",
-      x: this.startX,
-      y: this.startY,
-      width,
-      height,
+        // Pencil finish
+        if (this.selectedTool === "pencil" && this.currentPath.length > 1) {
+            shape = { type: "pencil", path: this.currentPath };
+            this.currentPath = [];
+        }
+
+        // Rectangle finish
+        else if (this.selectedTool === "rect") {
+            shape = {
+                type: "rect",
+                x: this.startX,
+                y: this.startY,
+                width,
+                height,
+            };
+        }
+
+        // Circle finish
+        else if (this.selectedTool === "circle") {
+            const radius = Math.sqrt(width * width + height * height) / 2;
+            shape = {
+                type: "circle",
+                centerX: this.startX + width / 2,
+                centerY: this.startY + height / 2,
+                radius,
+            };
+        }
+
+        if (!shape) return;
+
+        this.existingShapes.push(shape);
+
+        this.clearCanvas();
+        this.drawAllShapes();
+
+        if (this.mode !== "demo") {
+            this.socket?.send(
+                JSON.stringify({
+                    type: "chat",
+                    message: JSON.stringify({ shape }),
+                    roomId: this.roomId,
+                })
+            );
+        }
     };
-  }
-
-  // Circle finish
-  else if (this.selectedTool === "circle") {
-    const radius = Math.sqrt(width * width + height * height) / 2;
-    shape = {
-      type: "circle",
-      centerX: this.startX + width / 2,
-      centerY: this.startY + height / 2,
-      radius,
-    };
-  }
-
-  if (!shape) return;
-
-  this.existingShapes.push(shape);
-
-  this.clearCanvas();
-  this.drawAllShapes();
-
-  if (this.mode !== "demo") {
-    this.socket?.send(
-      JSON.stringify({
-        type: "chat",
-        message: JSON.stringify({ shape }),
-        roomId: this.roomId,
-      })
-    );
-  }
-};
-
 
     initMouseHandlers() {
         this.canvas.addEventListener("mousedown", this.mouseDownHandler);
