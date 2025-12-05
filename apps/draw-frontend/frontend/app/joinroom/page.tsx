@@ -61,20 +61,12 @@ export default function RoomLandingPage() {
     
     try {
       // Validate room exists
-      const response = await fetch(`${HTTP_URL}/room`);
+      const response = await fetch(`${HTTP_URL}/room/:slug`);
       const data = await response.json();
-      const actualroomID = data.roomId;
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Room not found. Please check the room ID.');
-        }
-        throw new Error(data.error || 'Failed to join room');
-      }
-      const joinroomId = setRoomId(roomId)
-      console.log(joinroomId);
-      
-      // Redirect to canvas
-      router.push(`/canvas/${actualroomID}`);
+      const actualroomID = data.room;
+    
+      // Redirect to canvas 
+      router.push(`/canvas/${roomId}`);
     } catch (err: any) {
       console.error('Error joining room:', err);
       setError(err.message || 'Failed to join room. Please try again.');

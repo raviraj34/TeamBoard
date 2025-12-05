@@ -162,3 +162,5 @@ userrouter.get("/room/:slug", async (req,res)=>{
     room
   })
 })
+
+
