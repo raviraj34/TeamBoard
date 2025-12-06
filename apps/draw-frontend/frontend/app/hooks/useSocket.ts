@@ -9,7 +9,7 @@ export function useSocket() {
   useEffect(() => {
     // Get token from localStorage or your auth system
     const token = typeof window !== 'undefined' 
-      ? localStorage.getItem('token') 
+      ? localStorage.getItem('Authorization') 
       : null;
 
     if (!token) {

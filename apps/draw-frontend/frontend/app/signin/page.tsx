@@ -233,7 +233,9 @@ const router = useRouter();
                 {/* Sign Up Link */}
                 <p className="text-center text-gray-600 mt-6">
                   Don't have an account?{' '}
-                  <button className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+                  <button onClick={()=>{
+                    router.push("/signup")
+                  }} className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
                     Sign up for free
                   </button>
                 </p>

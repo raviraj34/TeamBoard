@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Pencil, Mail, Lock, Eye, EyeOff, Github, Chrome, ArrowRight, Sparkles, User, Check } from 'lucide-react';
 import { HTTP_URL } from '../config';
-
+import { useRouter } from 'next/navigation';
+import Loader from '../../components/loader';
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -15,6 +16,8 @@ export default function SignUpPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+
+  const router= useRouter();
  //@ts-ignore
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -61,7 +64,8 @@ export default function SignUpPage() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      alert('Account created successfully!');
+      <Loader />
+      router.push("/signin")
     }, 2000);
   };
 
@@ -361,7 +365,9 @@ export default function SignUpPage() {
               {/* Sign In Link */}
               <p className="text-center text-gray-600 mt-6">
                 Already have an account?{' '}
-                <button className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+                <button onClick={()=>{
+                  router.push("/signin")
+                }} className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
                   Sign in
                 </button>
               </p>
