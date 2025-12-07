@@ -121,35 +121,32 @@ userrouter.post("/room", middleware, async (req, res) => {
 }
 )
 
+userrouter.get("/chats/:roomId", async (req, res) => {
+  try {
+    const roomId = Number(req.params.roomId);
 
-userrouter.get("/chats/:roomId", async (req,res)=>{
- try{
-  const roomId = Number(req.params.roomId);
-  console.log(req.params.roomId
-  );
-  
-  const messages = await prismaClient.chat.findMany({
-    where:{
-      roomId: roomId
-    },
-    orderBy:{
-      id:"desc"
-    },
-    take:500
-    
-  })
-  res.json({
-    messages
-  })
+    const messages = await prismaClient.chat.findMany({
+      where: { roomId },
+      orderBy: { id: "asc" },
+    });
 
-}catch(e){
-  console.log(e);
-  res.json({
-    messages:[]
-  })
-  
-}
-}) 
+    const formatted = messages.map(m => {
+      try {
+        const parsed = JSON.parse(m.message);
+        return { id: m.id, shape: parsed.shape };
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+
+    res.json({ messages: formatted });
+
+  } catch (e) {
+    console.log(e);
+    res.json({ messages: [] });
+  }
+});
+
 
 userrouter.get("/room/:slug", async (req,res)=>{
   const slug = req.params.slug;

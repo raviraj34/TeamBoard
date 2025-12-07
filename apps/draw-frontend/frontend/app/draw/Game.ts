@@ -9,7 +9,7 @@ type TextShapeData = { type: "text"; x: number; y: number; text: string; fontSiz
 
 export type ShapeData = RectShapeData | CircleShapeData | PencilShapeData | TextShapeData;
 
-// Final shape stored in canvas state (must have id)
+// Final shape stored in canvas state (must have id = Chat.id in live mode)
 export type Shape = ShapeData & { id: string };
 
 export class Game {
@@ -52,7 +52,7 @@ export class Game {
         this.initMouseHandlers();
     }
 
-    // simple id generator
+    // simple id generator – only used in demo / fallback
     private generateId() {
         return Math.random().toString(36).slice(2) + Date.now().toString(36);
     }
@@ -83,21 +83,47 @@ export class Game {
             return;
         }
 
+        /**
+         * IMPORTANT:
+         * getExistingShapes(roomId) should now return something like:
+         * [
+         *   { id: 1, shape: { type: "rect", x, y, width, height } },
+         *   { id: 2, shape: { type: "text", x, y, text, fontSize } },
+         *   ...
+         * ]
+         * where `id` is Chat.id
+         */
         const rawShapes: any[] = await getExistingShapes(this.roomId);
 
-        // Expect backend to already return { id, type, ... }
-        this.existingShapes = rawShapes.map((s: any) => {
-            if (s.id && s.type) {
-                return s as Shape;
-            }
+        this.existingShapes = rawShapes
+            .map((s: any) => {
+                // Case: { id, shape }
+                if (s.id != null && s.shape && s.shape.type) {
+                    return {
+                        id: String(s.id),
+                        ...(s.shape as ShapeData),
+                    } as Shape;
+                }
 
-            if (s.shape && s.shape.type) {
-                const id = s.shapeId ? String(s.shapeId) : this.generateId();
-                return { id, ...(s.shape as ShapeData) };
-            }
+                // Case: already in { id, type, ... } form
+                if (s.id != null && s.type) {
+                    return {
+                        id: String(s.id),
+                        ...(s as ShapeData),
+                    } as Shape;
+                }
 
-            return { id: this.generateId(), ...(s as ShapeData) };
-        });
+                // Fallback – not ideal for live, but avoids crash
+                if (s.type) {
+                    return {
+                        id: this.generateId(),
+                        ...(s as ShapeData),
+                    } as Shape;
+                }
+
+                return null;
+            })
+            .filter(Boolean) as Shape[];
 
         this.clearCanvas();
         this.drawAllShapes();
@@ -109,13 +135,29 @@ export class Game {
         this.socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
 
+            // New shape created (Chat row inserted on server)
             if (message.type === "chat") {
                 const parsed = JSON.parse(message.message);
-                const shapeData: ShapeData = parsed.shape;
-                const id: string =
-                    parsed.shapeId ??
-                    (shapeData as any).id ??
-                    this.generateId();
+                /**
+                 * Server should send:
+                 * {
+                 *   type: "chat",
+                 *   message: JSON.stringify({
+                 *     shapeId: <Chat.id>,
+                 *     shape: <ShapeData>
+                 *   }),
+                 *   roomId
+                 * }
+                 */
+                const shapeData: ShapeData | undefined = parsed.shape;
+                const shapeIdRaw = parsed.shapeId;
+
+                if (!shapeData || shapeIdRaw == null) {
+                    console.warn("Invalid chat shape payload:", parsed);
+                    return;
+                }
+
+                const id = String(shapeIdRaw);
 
                 const index = this.existingShapes.findIndex((s) => s.id === id);
 
@@ -127,19 +169,45 @@ export class Game {
 
                 this.clearCanvas();
                 this.drawAllShapes();
-            } else if (message.type === "shape-moved") {
-                const { shapeId, shape: shapeData } = JSON.parse(message.message) as {
-                    shapeId: string;
+            }
+
+            // Shape position updated (Chat row updated on server)
+            else if (message.type === "shape-moved") {
+                /**
+                 * Server should broadcast:
+                 * {
+                 *   type: "shape-moved",
+                 *   message: JSON.stringify({
+                 *     shapeId: <Chat.id>,
+                 *     shape: <ShapeData>
+                 *   }),
+                 *   roomId
+                 * }
+                 */
+                const { shapeId, shape: shapeData } = JSON.parse(
+                    message.message
+                ) as {
+                    shapeId: string | number;
                     shape: ShapeData | Shape;
                 };
 
-                const index = this.existingShapes.findIndex((s) => s.id === shapeId);
+                const id = String(shapeId);
+                const index = this.existingShapes.findIndex((s) => s.id === id);
+
                 if (index !== -1) {
                     const updated: Shape = {
-                        id: this.existingShapes[index].id,
+                        id,
                         ...(shapeData as ShapeData),
                     };
                     this.existingShapes[index] = updated;
+                    this.clearCanvas();
+                    this.drawAllShapes();
+                } else {
+                    // If somehow we didn't have it, we can insert it
+                    this.existingShapes.push({
+                        id,
+                        ...(shapeData as ShapeData),
+                    });
                     this.clearCanvas();
                     this.drawAllShapes();
                 }
@@ -375,41 +443,44 @@ export class Game {
     }
 
     finalizeText(x: number, y: number, text: string) {
-        if (!text.trim()) {
-            this.removeTextInput();
-            this.textFinalized = false;
-            return;
-        }
-
-        const data: TextShapeData = {
-            type: "text",
-            x,
-            y: y + 20,
-            text: text.trim(),
-            fontSize: 20,
-        };
-
-        // Always add locally
-        const id = this.generateId();
-        const shape: Shape = { id, ...data };
-        this.existingShapes.push(shape);
-        this.clearCanvas();
-        this.drawAllShapes();
-
-        // Sync to others
-        if (this.mode !== "demo" && this.socket) {
-            this.socket.send(
-                JSON.stringify({
-                    type: "chat",
-                    message: JSON.stringify({ shapeId: id, shape: data }),
-                    roomId: this.roomId,
-                })
-            );
-        }
-
+    if (!text.trim()) {
         this.removeTextInput();
         this.textFinalized = false;
+        return;
     }
+
+    const data: TextShapeData = {
+        type: "text",
+        x,
+        y: y + 20,
+        text: text.trim(),
+        fontSize: 20,
+    };
+
+    // Generate id locally
+    const id = this.generateId();
+    const shape: Shape = { id, ...data };
+
+    // ✅ ALWAYS add locally so it shows immediately
+    this.existingShapes.push(shape);
+    this.clearCanvas();
+    this.drawAllShapes();
+
+    // ✅ Send to server to sync (other users will get it)
+    if (this.mode !== "demo" && this.socket) {
+        this.socket.send(
+            JSON.stringify({
+                type: "chat",
+                message: JSON.stringify({ shapeId: id, shape: data }),
+                roomId: this.roomId,
+            })
+        );
+    }
+
+    // Cleanup
+    this.removeTextInput();
+    this.textFinalized = false;
+}
 
     removeTextInput() {
         if (!this.textInput) return;
@@ -517,88 +588,95 @@ export class Game {
     };
 
     mouseUpHandler = (e: MouseEvent) => {
-        // Finish dragging
-        if (this.isDragging && this.selectedShapeIndex !== null) {
-            this.isDragging = false;
-            this.canvas.style.cursor =
-                this.selectedTool === "select" ? "default" : "crosshair";
 
-            const shape = this.existingShapes[this.selectedShapeIndex];
-            if (!shape) return;
+    // ---------------------
+    // 1️⃣ MOVE SHAPE
+    // ---------------------
+    if (this.isDragging && this.selectedShapeIndex !== null) {
+        this.isDragging = false;
+        this.canvas.style.cursor = this.selectedTool === "select" ? "default" : "crosshair";
+        
+        const shape = this.existingShapes[this.selectedShapeIndex];
+        if (!shape) return;
 
-            const { id, ...shapeData } = shape;
+        const { id, ...shapeData } = shape;
 
-            if (this.mode !== "demo" && this.socket) {
-                this.socket.send(
-                    JSON.stringify({
-                        type: "shape-moved",
-                        message: JSON.stringify({
-                            shapeId: id,
-                            shape: shapeData as ShapeData,
-                        }),
-                        roomId: this.roomId,
-                    })
-                );
-            }
-
-            return;
-        }
-
-        if (this.selectedTool === "text" || this.selectedTool === "select") {
-            return;
-        }
-
-        this.clicked = false;
-
-        const endX = e.offsetX;
-        const endY = e.offsetY;
-
-        const width = endX - this.startX;
-        const height = endY - this.startY;
-
-        let data: ShapeData | null = null;
-
-        if (this.selectedTool === "pencil" && this.currentPath.length > 1) {
-            data = { type: "pencil", path: this.currentPath };
-            this.currentPath = [];
-        } else if (this.selectedTool === "rect") {
-            data = {
-                type: "rect",
-                x: this.startX,
-                y: this.startY,
-                width,
-                height,
-            };
-        } else if (this.selectedTool === "circle") {
-            const radius = Math.sqrt(width * width + height * height) / 2;
-            data = {
-                type: "circle",
-                centerX: this.startX + width / 2,
-                centerY: this.startY + height / 2,
-                radius,
-            };
-        }
-
-        if (!data) return;
-
-        // Always add locally
-        const id = this.generateId();
-        const shape: Shape = { id, ...data };
-        this.existingShapes.push(shape);
-        this.clearCanvas();
-        this.drawAllShapes();
-
-        // Sync to others
-        if (this.mode !== "demo" && this.socket) {
+        // Broadcast movement
+        if (this.socket && this.mode !== "demo") {
             this.socket.send(
                 JSON.stringify({
-                    type: "chat",
-                    message: JSON.stringify({ shapeId: id, shape: data }),
-                    roomId: this.roomId,
+                    type: "shape-moved",
+                    message: JSON.stringify({ shapeId: id, shape: shapeData }),
+                    roomId: this.roomId
                 })
             );
         }
-    };
+
+        return;
+    }
+
+    // ---------------------
+    // 2️⃣ TEXT or SELECT → do nothing
+    // ---------------------
+    if (this.selectedTool === "text" || this.selectedTool === "select") return;
+
+
+
+    // ---------------------
+    // 3️⃣ CREATE NEW SHAPE
+    // ---------------------
+    this.clicked = false;
+
+    const endX = e.offsetX;
+    const endY = e.offsetY;
+
+    const width = endX - this.startX;
+    const height = endY - this.startY;
+
+    let data: ShapeData | null = null;
+
+    if (this.selectedTool === "pencil" && this.currentPath.length > 1) {
+        data = { type: "pencil", path: this.currentPath };
+        this.currentPath = [];
+    } else if (this.selectedTool === "rect") {
+        data = { type: "rect", x: this.startX, y: this.startY, width, height };
+    } else if (this.selectedTool === "circle") {
+        const radius = Math.sqrt(width * width + height * height) / 2;
+        data = {
+            type: "circle",
+            centerX: this.startX + width / 2,
+            centerY: this.startY + height / 2,
+            radius
+        };
+    }
+
+    if (!data) return;
+
+
+    // ---------------------
+    // 4️⃣ ALWAYS Add Locally First (Fix disappearing bug)
+    // ---------------------
+    const tempId = this.generateId();
+    const shape: Shape = { id: tempId, ...data };
+
+    this.existingShapes.push(shape);
+
+    this.clearCanvas();
+    this.drawAllShapes();
+
+
+    // ---------------------
+    // 5️⃣ Broadcast to others — server will also store it in DB
+    // ---------------------
+    if (this.socket && this.mode !== "demo") {
+        this.socket.send(JSON.stringify({
+            type: "chat",
+            message: JSON.stringify({ shapeId: tempId, shape: data }),
+            roomId: this.roomId
+        }));
+    }
+};
+
 
     initMouseHandlers() {
         this.canvas.addEventListener("mousedown", this.mouseDownHandler);

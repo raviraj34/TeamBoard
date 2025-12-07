@@ -101,28 +101,95 @@ wss.on('connection', function connection(ws, request) {
         console.log(`User ${userId} left room ${parsedData.roomId}`);
       }
 
-      // Chat message
+      //
+      // CHAT: USED FOR SHAPE CREATION
+      //
+      
+
+
+         if (parsedData.type === "shape-moved") {
+    const roomId: string = parsedData.roomId;
+    const movePayload = JSON.parse(parsedData.message);
+    const { shapeId, shape } = movePayload;
+
+    await prismaClient.chat.update({
+      where: { id: Number(shapeId) },
+      data: { message: JSON.stringify({ shape }) }
+    });
+
+    broadcastToRoom(roomId, {
+      type: "shape-moved",
+      roomId,
+      userId,
+      message: JSON.stringify({ shapeId, shape })
+    }, ws);
+
+    return; // VERY IMPORTANT
+  }
+
       if (parsedData.type === "chat") {
-        const roomId = parsedData.roomId;
-        const message = parsedData.message;
+        const roomId: string = parsedData.roomId;
+        const rawMessage: string = parsedData.message;
 
-        await prismaClient.chat.create({
-          data: {
-            roomId: Number(roomId),
-            message,
-            userId
-          }
-        });
+        let parsedMessage: any;
+        try {
+          parsedMessage = JSON.parse(rawMessage);
+        } catch (e) {
+          parsedMessage = null;
+        }
 
-        broadcastToRoom(roomId, {
-          type: "chat",
-          message: message,
-          roomId,
-          userId
-        }, ws);
+        // We expect: { shape: <ShapeData> }
+        if (parsedMessage && parsedMessage.shape) {
+          const shape = parsedMessage.shape;
+
+          // Save shape in Chat table
+          const saved = await prismaClient.chat.create({
+            data: {
+              roomId: Number(roomId),
+              message: JSON.stringify({ shape }), // store just { shape }
+              userId
+            }
+          });
+
+          // Broadcast with DB id as shapeId
+          const payload = {
+            type: "chat",
+            roomId,
+            userId,
+            message: JSON.stringify({
+              shapeId: saved.id, // Chat.id
+              shape
+            })
+          };
+
+          broadcastToRoom(roomId, payload, ws);
+        } else {
+          // Fallback: treat as regular chat message (if you ever need text chat)
+          const saved = await prismaClient.chat.create({
+            data: {
+              roomId: Number(roomId),
+              message: rawMessage,
+              userId
+            }
+          });
+
+          const payload = {
+            type: "chat",
+            roomId,
+            userId,
+            message: rawMessage
+          };
+
+          broadcastToRoom(roomId, payload, ws);
+        }
       }
 
-      // Canvas: Object added
+      //
+      // SHAPE MOVED: UPDATE DB + BROADCAST
+      //
+      
+
+      // Canvas: Object added (old fabric logic - keep if you still use it)
       if (parsedData.type === "object-added") {
         const { roomId, object } = parsedData.payload;
 
@@ -134,7 +201,6 @@ wss.on('connection', function connection(ws, request) {
           }
         }, ws);
 
-        // Auto-save to database (optional, can be done on frontend)
         await saveCanvasToDatabase(roomId);
       }
 
@@ -201,9 +267,8 @@ wss.on('connection', function connection(ws, request) {
           }
         }, ws);
 
-        // Clear canvas in database
         await prismaClient.room.update({
-          where: { id: roomId },
+          where: { id: Number(roomId) },
           //@ts-ignore
           data: { canvasData: null }
         });
@@ -219,16 +284,15 @@ wss.on('connection', function connection(ws, request) {
     if (userIndex !== -1) {
       const user = users[userIndex];
       
-      // Notify all rooms the user was in
-      if(user){
-      user.rooms.forEach(roomId => {
-        broadcastToRoom(roomId, {
-          type: "user_left",
-          userId: user.userId
-        }, ws);
-        
-      });
-    }
+      if (user) {
+        user.rooms.forEach(roomId => {
+          broadcastToRoom(roomId, {
+            type: "user_left",
+            userId: user.userId
+          }, ws);
+        });
+      }
+
       users.splice(userIndex, 1);
       console.log(`User ${userId} disconnected. Total users: ${users.length}`);
     }
@@ -255,8 +319,6 @@ function broadcastToRoom(roomId: string, message: any, senderWs?: WebSocket) {
 // Helper function to save canvas to database (optional - can be done from frontend)
 async function saveCanvasToDatabase(roomId: string) {
   try {
-    // Note: This is a placeholder. In practice, you'd get the full canvas data
-    // from the frontend via a separate message type or API call
     console.log(`Canvas auto-save triggered for room ${roomId}`);
   } catch (error) {
     console.error('Error saving canvas:', error);
