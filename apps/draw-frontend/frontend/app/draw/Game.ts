@@ -217,7 +217,7 @@ export class Game {
 
     clearCanvas() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.fillStyle = "black";
+        this.ctx.fillStyle = "white";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
@@ -226,15 +226,14 @@ export class Game {
             const shape = this.existingShapes[i];
 
             if (i === this.selectedShapeIndex) {
-                this.ctx.strokeStyle = "yellow";
-                this.ctx.fillStyle = "yellow";
+                this.ctx.strokeStyle = "purple";
+                this.ctx.fillStyle = "purple";
                 this.ctx.lineWidth = 3;
             } else {
-                this.ctx.strokeStyle = "white";
-                this.ctx.fillStyle = "white";
+                this.ctx.strokeStyle = "black";
+                this.ctx.fillStyle = "black";
                 this.ctx.lineWidth = 1;
             }
-
             if (shape.type === "rect") {
                 this.ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
             } else if (shape.type === "circle") {
@@ -262,7 +261,7 @@ export class Game {
             }
         }
 
-        this.ctx.strokeStyle = "white";
+        this.ctx.strokeStyle = "black";
         this.ctx.fillStyle = "white";
         this.ctx.lineWidth = 1;
     }

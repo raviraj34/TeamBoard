@@ -65,7 +65,7 @@ export default function RoomLandingPage() {
       const data = await response.json();
       const actualroomID = data.room;
     
-      // Redirect to canvas 
+      // Redirect to canvas      
       router.push(`/canvas/${roomId}`);
     } catch (err: any) {
       console.error('Error joining room:', err);
