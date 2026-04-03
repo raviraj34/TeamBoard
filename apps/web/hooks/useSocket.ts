@@ -11,6 +11,7 @@ export function UseSocket(){
         ws.onopen=()=>{
             setloading(false);
             setsocket(ws);
+            
         }
     },[])
     return{
