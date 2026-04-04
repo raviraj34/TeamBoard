@@ -136,7 +136,7 @@ export default function FeaturesPage() {
             </nav>
 
             {/* Hero Section */}
-            <div className="max-w-7xl mx-auto px-6 pt-20 pb-16 text-center">
+            <div className="max-w-7xl md:flex md:w-42 mx-auto px-6 pt-20 pb-16 text-center">
                 <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full mb-6">
                     <Sparkles className="w-4 h-4" />
                     <span className="text-sm font-medium">Everything you need to collaborate</span>

@@ -1,7 +1,6 @@
 import { Tool } from "../../components/canvas";
 import { getExistingShapes } from "./http";
 
-// Shape data (no id)
 type RectShapeData = { type: "rect"; x: number; y: number; width: number; height: number };
 type CircleShapeData = { type: "circle"; centerX: number; centerY: number; radius: number };
 type PencilShapeData = { type: "pencil"; path: { x: number; y: number }[] };
@@ -14,9 +13,8 @@ type ImageShapeData = {
   height: number;
   src: string;
 };
-export type ShapeData = RectShapeData | CircleShapeData | PencilShapeData | TextShapeData | ImageShapeData;
 
-// Final shape stored in canvas state (must have id = Chat.id in live mode)
+export type ShapeData = RectShapeData | CircleShapeData | PencilShapeData | TextShapeData | ImageShapeData;
 export type Shape = ShapeData & { id: string };
 
 export class Game {
@@ -32,8 +30,8 @@ export class Game {
     private isEditingText = false;
     private textInput: HTMLInputElement | null = null;
     private textFinalized = false;
+    private loadedImages: Map<string, HTMLImageElement> = new Map(); // Cache loaded images
 
-    // moving shapes
     private isDragging = false;
     private selectedShapeIndex: number | null = null;
     private dragOffsetX = 0;
@@ -59,29 +57,38 @@ export class Game {
         this.initMouseHandlers();
     }
 
-    // simple id generator – only used in demo / fallback
     private generateId() {
         return Math.random().toString(36).slice(2) + Date.now().toString(36);
     }
 
-    private uploadImage(callback: (src: string) => void) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
+private render() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    input.onchange = () => {
-        const file = input.files?.[0];
-        if (!file) return;
+    // background
+    this.ctx.fillStyle = "white";
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const reader = new FileReader();
-        reader.onload = () => {
-            callback(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-    };
-
-    input.click();
+    this.drawAllShapes();
 }
+
+    private uploadImage(callback: (src: string) => void) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+
+        input.onchange = () => {
+            const file = input.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                callback(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        };
+
+        input.click();
+    }
 
     destroy() {
         this.canvas.removeEventListener("mousedown", this.mouseDownHandler);
@@ -89,19 +96,19 @@ export class Game {
         this.canvas.removeEventListener("mousemove", this.mouseMoveHandler);
         this.removeTextInput();
     }
+setTool(tool: Tool) {
+    this.selectedTool = tool;
 
-    setTool(tool: Tool) {
-        this.selectedTool = tool;
-
-        if (tool !== "text") {
-            this.removeTextInput();
-        }
-
-        this.isDragging = false;
-        this.selectedShapeIndex = null;
-        this.clearCanvas();
-        this.drawAllShapes();
+    if (tool !== "text") {
+        this.removeTextInput();
     }
+
+    this.isDragging = false;
+    this.selectedShapeIndex = null;
+
+    // ✅ JUST redraw (no unnecessary flicker)
+    this.render();
+}
 
     async init() {
         if (this.mode === "demo") {
@@ -109,21 +116,10 @@ export class Game {
             return;
         }
 
-        /**
-         * IMPORTANT:
-         * getExistingShapes(roomId) should now return something like:
-         * [
-         *   { id: 1, shape: { type: "rect", x, y, width, height } },
-         *   { id: 2, shape: { type: "text", x, y, text, fontSize } },
-         *   ...
-         * ]
-         * where `id` is Chat.id
-         */
         const rawShapes: any[] = await getExistingShapes(this.roomId);
 
         this.existingShapes = rawShapes
             .map((s: any) => {
-                // Case: { id, shape }
                 if (s.id != null && s.shape && s.shape.type) {
                     return {
                         id: String(s.id),
@@ -131,7 +127,6 @@ export class Game {
                     } as Shape;
                 }
 
-                // Case: already in { id, type, ... } form
                 if (s.id != null && s.type) {
                     return {
                         id: String(s.id),
@@ -139,7 +134,6 @@ export class Game {
                     } as Shape;
                 }
 
-                // Fallback – not ideal for live, but avoids crash
                 if (s.type) {
                     return {
                         id: this.generateId(),
@@ -151,8 +145,7 @@ export class Game {
             })
             .filter(Boolean) as Shape[];
 
-        this.clearCanvas();
-        this.drawAllShapes();
+       this.render();
     }
 
     initHandlers() {
@@ -160,24 +153,12 @@ export class Game {
 
         this.socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
-            //@ts-ignore
-            if (message.type === "chat" && message.userId === this.userId) {
-                return;
-            }
-            // New shape created (Chat row inserted on server)
+
+            console.log("📨 Received WebSocket message:", message.type);
+
+            // ✅ Handle new shape creation
             if (message.type === "chat") {
                 const parsed = JSON.parse(message.message);
-                /**
-                 * Server should send:
-                 * {
-                 *   type: "chat",
-                 *   message: JSON.stringify({
-                 *     shapeId: <Chat.id>,
-                 *     shape: <ShapeData>
-                 *   }),
-                 *   roomId
-                 * }
-                 */
                 const shapeData: ShapeData | undefined = parsed.shape;
                 const shapeIdRaw = parsed.shapeId;
 
@@ -188,75 +169,65 @@ export class Game {
 
                 const id = String(shapeIdRaw);
 
-                const index = this.existingShapes.findIndex((s) => s.id === id);
-
+                // Check if we already have this shape (avoid duplicates)
                 const existing = this.existingShapes.find((s) => s.id === id);
 
                 if (!existing) {
+                    console.log("➕ Adding new shape:", id);
                     this.existingShapes.push({ id, ...shapeData });
+                    this.render();
                 } else {
-                    Object.assign(existing, shapeData);
+                    console.log("⚠️ Shape already exists, skipping:", id);
                 }
-
-                this.clearCanvas();
-                this.drawAllShapes();
             }
 
-            // Shape position updated (Chat row updated on server)
+            // ✅ Handle shape movement
             else if (message.type === "shape-moved") {
-                /**
-                 * Server should broadcast:
-                 * {
-                 *   type: "shape-moved",
-                 *   message: JSON.stringify({
-                 *     shapeId: <Chat.id>,
-                 *     shape: <ShapeData>
-                 *   }),
-                 *   roomId
-                 * }
-                 */
-                const { shapeId, shape: shapeData } = JSON.parse(
-                    message.message
-                ) as {
+                const { shapeId, shape: shapeData } = JSON.parse(message.message) as {
                     shapeId: string | number;
-                    shape: ShapeData | Shape;
+                    shape: ShapeData;
                 };
 
                 const id = String(shapeId);
-                const index = this.existingShapes.findIndex((s) => s.id === id);
-                //@ts-ignore
-                if (message.type === "chat" && message.userId === this.userId) return;
-                if (index !== -1) {
-                    const updated: Shape = {
-                        id,
-                        ...(shapeData as ShapeData),
-                    };
-                    const existing = this.existingShapes[index];
+                console.log("🔀 Shape moved - ID:", id);
 
-                    if (existing.type === "rect") {
-                        existing.x = (shapeData as any).x;
-                        existing.y = (shapeData as any).y;
+                const index = this.existingShapes.findIndex((s) => s.id === id);
+
+                if (index !== -1) {
+                    console.log("✅ Updating shape at index:", index);
+                    
+                    // Update the shape data
+                    const existing = this.existingShapes[index];
+                    
+                    if (existing.type === "rect" && shapeData.type === "rect") {
+                        existing.x = shapeData.x;
+                        existing.y = shapeData.y;
+                        existing.width = shapeData.width;
+                        existing.height = shapeData.height;
                     }
-                    else if (existing.type === "circle") {
-                        existing.centerX = (shapeData as any).centerX;
-                        existing.centerY = (shapeData as any).centerY;
+                    else if (existing.type === "circle" && shapeData.type === "circle") {
+                        existing.centerX = shapeData.centerX;
+                        existing.centerY = shapeData.centerY;
+                        existing.radius = shapeData.radius;
                     }
-                    else if (existing.type === "pencil") {
-                        existing.path = (shapeData as any).path;
+                    else if (existing.type === "pencil" && shapeData.type === "pencil") {
+                        existing.path = shapeData.path;
                     }
-                    else if (existing.type === "text") {
-                        existing.x = (shapeData as any).x;
-                        existing.y = (shapeData as any).y;
-                    } this.clearCanvas();
-                    this.drawAllShapes();
+                    else if (existing.type === "text" && shapeData.type === "text") {
+                        existing.x = shapeData.x;
+                        existing.y = shapeData.y;
+                        existing.text = shapeData.text;
+                    }
+                    else if (existing.type === "image" && shapeData.type === "image") {
+                        existing.x = shapeData.x;
+                        existing.y = shapeData.y;
+                        existing.width = shapeData.width;
+                        existing.height = shapeData.height;
+                    }
+
+                    this.render();
                 } else {
-                    // If somehow we didn't have it, we can insert it
-                    this.existingShapes.push({
-                        id,
-                        ...(shapeData as ShapeData),
-                    });
-                    this.clearCanvas();
-                    this.drawAllShapes();
+                    console.warn("❌ Shape not found with ID:", id);
                 }
             }
         };
@@ -281,6 +252,7 @@ export class Game {
                 this.ctx.fillStyle = "black";
                 this.ctx.lineWidth = 1;
             }
+
             if (shape.type === "rect") {
                 this.ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
             } else if (shape.type === "circle") {
@@ -305,18 +277,28 @@ export class Game {
             } else if (shape.type === "text") {
                 this.ctx.font = `${shape.fontSize}px Arial`;
                 this.ctx.fillText(shape.text, shape.x, shape.y);
-            }else if (shape.type === "image") {
-    const img = new Image();
-    img.src = shape.src;
+            } else if (shape.type === "image") {
+                // Use cached image or create new one
+                let img = this.loadedImages.get(shape.src);
+                
+                if (!img) {
+                    img = new Image();
+                    img.src = shape.src;
+                    this.loadedImages.set(shape.src, img);
+                    
+                    img.onload = () => {
+                        this.render();
+                    };
+                }
 
-    img.onload = () => {
-        this.ctx.drawImage(img, shape.x, shape.y, shape.width, shape.height);
-    };
-}
+                if (img.complete) {
+                    this.ctx.drawImage(img, shape.x, shape.y, shape.width, shape.height);
+                }
+            }
         }
 
         this.ctx.strokeStyle = "black";
-        this.ctx.fillStyle = "white";
+        this.ctx.fillStyle = "black";
         this.ctx.lineWidth = 1;
     }
 
@@ -326,7 +308,6 @@ export class Game {
             const maxX = Math.max(shape.x, shape.x + shape.width);
             const minY = Math.min(shape.y, shape.y + shape.height);
             const maxY = Math.max(shape.y, shape.y + shape.height);
-
             return x >= minX && x <= maxX && y >= minY && y <= maxY;
         } else if (shape.type === "circle") {
             const dx = x - shape.centerX;
@@ -336,14 +317,7 @@ export class Game {
             for (let i = 0; i < shape.path.length - 1; i++) {
                 const p1 = shape.path[i];
                 const p2 = shape.path[i + 1];
-                const distance = this.distanceToLineSegment(
-                    x,
-                    y,
-                    p1.x,
-                    p1.y,
-                    p2.x,
-                    p2.y
-                );
+                const distance = this.distanceToLineSegment(x, y, p1.x, p1.y, p2.x, p2.y);
                 if (distance < 10) return true;
             }
             return false;
@@ -356,33 +330,24 @@ export class Game {
                 y >= shape.y - shape.fontSize &&
                 y <= shape.y + 5
             );
-        }else if (shape.type === "image") {
-    return (
-        x >= shape.x &&
-        x <= shape.x + shape.width &&
-        y >= shape.y &&
-        y <= shape.y + shape.height
-    );
-}
+        } else if (shape.type === "image") {
+            return (
+                x >= shape.x &&
+                x <= shape.x + shape.width &&
+                y >= shape.y &&
+                y <= shape.y + shape.height
+            );
+        }
         return false;
     }
 
-    distanceToLineSegment(
-        px: number,
-        py: number,
-        x1: number,
-        y1: number,
-        x2: number,
-        y2: number
-    ): number {
+    distanceToLineSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const lengthSquared = dx * dx + dy * dy;
 
         if (lengthSquared === 0) {
-            return Math.sqrt(
-                (px - x1) * (px - x1) + (py - y1) * (py - y1)
-            );
+            return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
         }
 
         let t = ((px - x1) * dx + (py - y1) * dy) / lengthSquared;
@@ -391,9 +356,7 @@ export class Game {
         const projX = x1 + t * dx;
         const projY = y1 + t * dy;
 
-        return Math.sqrt(
-            (px - projX) * (px - projX) + (py - projY) * (py - projY)
-        );
+        return Math.sqrt((px - projX) * (px - projX) + (py - projY) * (py - projY));
     }
 
     findShapeAtPoint(x: number, y: number): number | null {
@@ -415,17 +378,14 @@ export class Game {
             shape.centerX += dx;
             shape.centerY += dy;
         } else if (shape.type === "pencil") {
-            shape.path = shape.path.map((p) => ({
-                x: p.x + dx,
-                y: p.y + dy,
-            }));
+            shape.path = shape.path.map((p) => ({ x: p.x + dx, y: p.y + dy }));
         } else if (shape.type === "text") {
             shape.x += dx;
             shape.y += dy;
-        }else if (shape.type === "image") {
-    shape.x += dx;
-    shape.y += dy;
-}
+        } else if (shape.type === "image") {
+            shape.x += dx;
+            shape.y += dy;
+        }
     }
 
     drawPencilPreview() {
@@ -456,9 +416,9 @@ export class Game {
         input.style.left = `${rect.left + x}px`;
         input.style.top = `${rect.top + y}px`;
         input.style.font = "20px Arial";
-        input.style.border = "2px solid white";
-        input.style.background = "rgba(0, 0, 0, 0.8)";
-        input.style.color = "white";
+        input.style.border = "2px solid black";
+        input.style.background = "white";
+        input.style.color = "black";
         input.style.padding = "5px";
         input.style.outline = "none";
         input.style.zIndex = "10000";
@@ -520,17 +480,14 @@ export class Game {
             fontSize: 20,
         };
 
-        // Generate id locally
         const id = this.generateId();
         const shape: Shape = { id, ...data };
 
-        // ✅ ALWAYS add locally so it shows immediately
         this.existingShapes.push(shape);
-        this.clearCanvas();
-        this.drawAllShapes();
+        this.render();
 
-        // ✅ Send to server to sync (other users will get it)
         if (this.mode !== "demo" && this.socket) {
+            console.log("📤 Sending text shape:", { shapeId: id });
             this.socket.send(
                 JSON.stringify({
                     type: "chat",
@@ -540,7 +497,6 @@ export class Game {
             );
         }
 
-        // Cleanup
         this.removeTextInput();
         this.textFinalized = false;
     }
@@ -567,41 +523,33 @@ export class Game {
         }
 
         if (this.selectedTool === "image") {
-    this.uploadImage((src) => {
-        const data: ImageShapeData = {
-            type: "image",
-            x: e.offsetX,
-            y: e.offsetY,
-            width: 200,
-            height: 200,
-            src,
-        };
+            this.uploadImage((src) => {
+                const data: ImageShapeData = {
+                    type: "image",
+                    x: e.offsetX,
+                    y: e.offsetY,
+                    width: 200,
+                    height: 200,
+                    src,
+                };
 
-        const id = this.generateId();
-        const shape: Shape = { id, ...data };
+                const id = this.generateId();
+                const shape: Shape = { id, ...data };
 
-        // ✅ local render
-        this.existingShapes.push(shape);
-        this.clearCanvas();
-        this.drawAllShapes();
+                this.existingShapes.push(shape);
+                this.render();
 
-        // ✅ send to server
-        if (this.socket && this.mode !== "demo") {
-            this.socket.send(JSON.stringify({
-                type: "chat",
-                //@ts-ignore
-                userId: this.userId,
-                message: JSON.stringify({
-                    shapeId: id,
-                    shape: data
-                }),
-                roomId: this.roomId
-            }));
+                if (this.socket && this.mode !== "demo") {
+                    console.log("📤 Sending image shape:", { shapeId: id });
+                    this.socket.send(JSON.stringify({
+                        type: "chat",
+                        message: JSON.stringify({ shapeId: id, shape: data }),
+                        roomId: this.roomId
+                    }));
+                }
+            });
+            return;
         }
-    });
-
-    return;
-}
 
         if (this.textInput) {
             this.removeTextInput();
@@ -615,16 +563,12 @@ export class Game {
                 this.selectedShapeIndex = shapeIndex;
                 this.dragOffsetX = e.offsetX;
                 this.dragOffsetY = e.offsetY;
-
                 this.canvas.style.cursor = "move";
-
-                this.clearCanvas();
-                this.drawAllShapes();
+               this.render();
                 return;
             } else {
                 this.selectedShapeIndex = null;
-                this.clearCanvas();
-                this.drawAllShapes();
+               this.render();
                 return;
             }
         }
@@ -648,8 +592,7 @@ export class Game {
             this.dragOffsetX = e.offsetX;
             this.dragOffsetY = e.offsetY;
 
-            this.clearCanvas();
-            this.drawAllShapes();
+            this.render();
             return;
         }
 
@@ -657,9 +600,7 @@ export class Game {
 
         if (this.selectedTool === "pencil") {
             this.currentPath.push({ x: e.offsetX, y: e.offsetY });
-
-            this.clearCanvas();
-            this.drawAllShapes();
+            this.render();
             this.drawPencilPreview();
             return;
         }
@@ -667,14 +608,12 @@ export class Game {
         const width = e.offsetX - this.startX;
         const height = e.offsetY - this.startY;
 
-        this.clearCanvas();
-        this.drawAllShapes();
+        this.render();
 
         if (this.selectedTool === "rect") {
             this.ctx.strokeRect(this.startX, this.startY, width, height);
         } else if (this.selectedTool === "circle") {
             const radius = Math.sqrt(width * width + height * height) / 2;
-
             this.ctx.beginPath();
             this.ctx.arc(
                 this.startX + width / 2,
@@ -688,10 +627,7 @@ export class Game {
     };
 
     mouseUpHandler = (e: MouseEvent) => {
-
-        // ---------------------
-        // 1️⃣ MOVE SHAPE
-        // ---------------------
+        // Handle shape movement
         if (this.isDragging && this.selectedShapeIndex !== null) {
             this.isDragging = false;
             this.canvas.style.cursor = this.selectedTool === "select" ? "default" : "crosshair";
@@ -701,7 +637,8 @@ export class Game {
 
             const { id, ...shapeData } = shape;
 
-            // Broadcast movement
+            console.log("📤 Sending shape-moved:", { shapeId: id, shape: shapeData });
+
             if (this.socket && this.mode !== "demo") {
                 this.socket.send(
                     JSON.stringify({
@@ -715,21 +652,14 @@ export class Game {
             return;
         }
 
-        // ---------------------
-        // 2️⃣ TEXT or SELECT → do nothing
-        // ---------------------
-        if (this.selectedTool === "text" || this.selectedTool === "select") return;
+        if (this.selectedTool === "text" || this.selectedTool === "select" || this.selectedTool === "image") {
+            return;
+        }
 
-
-
-        // ---------------------
-        // 3️⃣ CREATE NEW SHAPE
-        // ---------------------
         this.clicked = false;
 
         const endX = e.offsetX;
         const endY = e.offsetY;
-
         const width = endX - this.startX;
         const height = endY - this.startY;
 
@@ -752,31 +682,21 @@ export class Game {
 
         if (!data) return;
 
-
-        // ---------------------
-        // 4️⃣ ALWAYS Add Locally First (Fix disappearing bug)
-        // ---------------------
-        const tempId = this.generateId();
-        const shape: Shape = { id: tempId, ...data };
+        const id = this.generateId();
+        const shape: Shape = { id, ...data };
 
         this.existingShapes.push(shape);
+       this.render();
 
-        this.clearCanvas();
-        this.drawAllShapes();
-
-
-        // ---------------------
-        // 5️⃣ Broadcast to others — server will also store it in DB
-        // ---------------------
         if (this.socket && this.mode !== "demo") {
+            console.log("📤 Sending new shape:", { shapeId: id });
             this.socket.send(JSON.stringify({
                 type: "chat",
-                message: JSON.stringify({ shapeId: tempId, shape: data }),
+                message: JSON.stringify({ shapeId: id, shape: data }),
                 roomId: this.roomId
             }));
         }
     };
-
 
     initMouseHandlers() {
         this.canvas.addEventListener("mousedown", this.mouseDownHandler);
