@@ -13,7 +13,6 @@ export default function RoomLandingPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState('');
-
   const handleCreateRoom = async () => {
     setIsCreating(true);
     setError('');

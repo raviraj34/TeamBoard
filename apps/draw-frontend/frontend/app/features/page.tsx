@@ -11,7 +11,7 @@ import {
 export default function FeaturesPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('collaboration');
-
+    const [menuOpen , setMenuOpen] = useState(false);
     const mainFeatures = [
         {
             icon: <Users className="w-8 h-8" />,
@@ -136,7 +136,7 @@ export default function FeaturesPage() {
             </nav>
 
             {/* Hero Section */}
-            <div className="max-w-7xl md:flex md:w-42 mx-auto px-6 pt-20 pb-16 text-center">
+            <div className=" flex flex-col max-w-7xl md:flex-row md:w-42 mx-auto px-6 pt-20 pb-16 text-center">
                 <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full mb-6">
                     <Sparkles className="w-4 h-4" />
                     <span className="text-sm font-medium">Everything you need to collaborate</span>

@@ -1,13 +1,13 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { Pencil, Users, Zap, Download, Lock, Sparkles, ArrowRight, Check, Router, SquarePlus, Airplay } from 'lucide-react';
+import { Pencil, Users, Zap, Download, Lock, Sparkles, ArrowRight, Check, Router, SquarePlus, Airplay, Menu, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function WhiteboardLanding() {
   const router  =useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
-  
+  const[menuOpen , setmenuOpen] =useState(false);
   
   useEffect(() => {
     setIsVisible(true);
@@ -59,27 +59,65 @@ export default function WhiteboardLanding() {
         <div className="flex items-center gap-4">
           <button onClick={()=>{
             router.push("/features")
-          }} className="px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">
+          }} className="hidden md:flex px-4 py-2  text-gray-700 hover:text-indigo-600 transition-colors">
             Features
           </button>
-          <button className="px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">
+          <button className="hidden md:flex px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">
             Pricing
           </button>
           <button onClick={()=>{
             router.push("/signin")
-          }} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all hover:scale-105 shadow-lg shadow-indigo-200">
+          }} className="hidden md:flex px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all hover:scale-105 shadow-lg shadow-indigo-200">
             Signin
           </button>
           <button onClick={()=>{
             router.push("/signup")
-          }} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all hover:scale-105 shadow-lg shadow-indigo-200">
+          }} className="hidden md:flex px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all hover:scale-105 shadow-lg shadow-indigo-200">
             Signup
           </button>
+
+          
         </div>
+          <button className='md:hidden'
+          onClick={()=> setmenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <X /> :<Menu />}
+          </button>
+
       </nav>
+      {menuOpen && (
+       <div
+  className={`
+    md:hidden
+    overflow-hidden
+    transition-all duration-300 ease-in-out
+    ${menuOpen ? "max-h-60 opacity-100 mt-4" : "max-h-0 opacity-0"}
+  `}
+>
+  <div className="
+    flex flex-col gap-4
+    bg-white/70 backdrop-blur-lg
+    rounded-xl shadow-lg p-5
+    border border-gray-200
+    
+  ">
+    <button onClick={()=> router.push("/signin")} className="bg-indigo-600 text-white rounded-lg py-2 text-center">Sign In</button>
+    <button onClick={()=>router.push("/signup")}className="bg-indigo-600 text-white rounded-lg py-2">
+      Sign Up
+    </button>
+    <button onClick={()=>router.push("/feature")}className="bg-indigo-600 text-white rounded-lg py-2">
+      Features
+    </button>
+    <button onClick={()=>router.push("/pricing")}className="bg-indigo-600 text-white rounded-lg py-2">
+      Pricing
+    </button>
+    
+  </div>
+</div>
+      )}
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-6 pt-20 pb-32">
+      <div className="max-w-7xl mx-auto px-6 pt-20 pb-12 md:pb-25">
         <div className={`text-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
           <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full mb-6">
             <Sparkles className="w-4 h-4" />
@@ -119,13 +157,14 @@ export default function WhiteboardLanding() {
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-50"></div>
               
               {/* Mock Canvas */}
-              <div className="relative bg-white rounded-lg h-96 flex items-center justify-center">
-                <div className="grid grid-cols-3 gap-8 p-8">
+              <div className="relative bg-white rounded-lg py-10 ">
+                <div className=" grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 p-8 ">
                   {features.map((feature, idx) => (
                     <div
                       key={idx}
                       className={`transform transition-all duration-500 ${
                         activeFeature === idx ? 'scale-110 -rotate-2' : 'scale-100 rotate-0'
+                  
                       }`}
                     >
                       <div className={`p-6 rounded-xl border-2 ${
