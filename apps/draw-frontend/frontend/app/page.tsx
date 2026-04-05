@@ -8,7 +8,8 @@ export default function WhiteboardLanding() {
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const[menuOpen , setmenuOpen] =useState(false);
-  
+  const[showPricingPopup , setshowPricingPopup] = useState(false);
+
   useEffect(() => {
     setIsVisible(true);
     const interval = setInterval(() => {
@@ -62,7 +63,7 @@ export default function WhiteboardLanding() {
           }} className="hidden md:flex px-4 py-2  text-gray-700 hover:text-indigo-600 transition-colors">
             Features
           </button>
-          <button className="hidden md:flex px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">
+          <button onClick={()=>setshowPricingPopup(true)} className="hidden md:flex px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">
             Pricing
           </button>
           <button onClick={()=>{
@@ -85,6 +86,44 @@ export default function WhiteboardLanding() {
           </button>
 
       </nav>
+{showPricingPopup && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    
+    {/* Background overlay */}
+    <div 
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      onClick={() => setshowPricingPopup(false)}
+    />
+
+    {/* Modal */}
+    <div className="
+      relative z-10
+      bg-white rounded-2xl p-6
+      shadow-xl
+      max-w-sm w-[90%]
+      text-center
+      transform transition-all duration-300 scale-100 opacity-100
+    ">
+      <h2 className="text-xl font-semibold mb-2">
+        🎉 It's Free!
+      </h2>
+
+      <p className="text-gray-600 mb-4">
+        We don’t charge anything. Enjoy unlimited drawing and collaboration for free!
+      </p>
+
+      <button
+        onClick={() => setshowPricingPopup(false)}
+        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+      >
+        Got it
+      </button>
+    </div>
+  </div>
+)}
+
+
+
       {menuOpen && (
        <div
   className={`
@@ -105,10 +144,10 @@ export default function WhiteboardLanding() {
     <button onClick={()=>router.push("/signup")}className="bg-indigo-600 text-white rounded-lg py-2">
       Sign Up
     </button>
-    <button onClick={()=>router.push("/feature")}className="bg-indigo-600 text-white rounded-lg py-2">
+    <button onClick={()=>router.push("/features")}className="bg-indigo-600 text-white rounded-lg py-2">
       Features
     </button>
-    <button onClick={()=>router.push("/pricing")}className="bg-indigo-600 text-white rounded-lg py-2">
+    <button onClick={()=>setshowPricingPopup(true)}className="bg-indigo-600 text-white rounded-lg py-2">
       Pricing
     </button>
     

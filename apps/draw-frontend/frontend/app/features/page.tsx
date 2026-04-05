@@ -122,9 +122,7 @@ export default function FeaturesPage() {
                     >
                         Home
                     </button>
-                    <button className="px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors">
-                        Features
-                    </button>
+                    
                     
                     <button
                         onClick={() => router.push('/joinroom')}
@@ -136,7 +134,7 @@ export default function FeaturesPage() {
             </nav>
 
             {/* Hero Section */}
-            <div className=" flex flex-col max-w-7xl md:flex-row md:w-42 mx-auto px-6 pt-20 pb-16 text-center">
+            <div className="  max-w-7xl md:flex-col  mx-auto px-6 pt-20 pb-16 text-center">
                 <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full mb-6">
                     <Sparkles className="w-4 h-4" />
                     <span className="text-sm font-medium">Everything you need to collaborate</span>
