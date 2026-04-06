@@ -1,6 +1,5 @@
 {
-  "framework": null,
-  "installCommand": "npm install -g pnpm@9.0.0 && pnpm install",
-  "buildCommand": "pnpm turbo run build --filter=draw-frontend",
-  "outputDirectory": "apps/draw-frontend/frontend/.next"
+  "buildCommand": "pnpm turbo run build --filter=frontend",
+  "outputDirectory": "apps/draw-frontend/frontend/.next",
+  "installCommand": "pnpm install"
 }
