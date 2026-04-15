@@ -14,7 +14,7 @@ userrouter.post("/signup", async (req, res) => {
       password: z.string().min(2).max(23),
       name: z.string().min(2).max(30),
     });
-
+//userroutes implementation
     const parseddata = userschema.safeParse(req.body);
     if (!parseddata.success) {
       return res.status(400).json({ message: "Invalid schema" });
